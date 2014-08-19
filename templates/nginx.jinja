@@ -1,0 +1,46 @@
+{%- if host -%}
+  {% set hosts = [host] %}
+{%- elif hosts -%}
+  {% set hosts = hosts.splitlines() %}
+{%- endif -%}
+{% macro static(url, path, expiration='max') %}
+  location /{{ url.strip('/') }}/ {
+    alias {{ path.rstrip('/') }}/;
+    expires {{ expiration }};
+  }
+{% endmacro %}
+
+server {
+  listen {% if port -%}
+    {{ port }}
+  {%- else -%}
+    80
+  {%- endif -%}{% if ip %} {{ ip }}{% endif %};
+  {% if hosts -%}
+  server_name {% for host in hosts -%}
+    {%- if host.strip() -%}{{ host.strip() }} {% endif -%}
+  {%- endfor -%};{% endif %}
+  {%- if access_log -%}
+    access_log {{ access_log }};
+  {%- endif -%}
+  {%- if error_log -%}
+    error_log {{ error_log }};
+  {%- endif -%}
+
+  {% for s in statics.splitlines() %}
+    {% if s.strip() %}
+      {% set args = s.split(';') %}
+      {{ static(*args) }}
+    {% endif %}
+  {% endfor %}
+
+  location / {
+    include uwsgi_params;
+    uwsgi_pass {% if socket_path -%}
+      unix://{{ socket_path }}
+    {%- else -%}
+      {% if socket_host %}{{ socket_host }}{% else %}localhost{% endif %}:{{ socket_port }}
+    {%- endif -%};
+  }
+}
+

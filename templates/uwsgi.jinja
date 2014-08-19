@@ -1,0 +1,17 @@
+[uwsgi]
+protocol = uwsgi
+socket = {{ socket_path }}
+wsgi-file = {{ wsgi_app }}
+chdir = {{ parts.buildout.directory }}
+workers = {{ processes }}
+master = true
+die-on-term = true
+uid = www-data
+gid = www-data
+single-interpreter = true
+enable-threads = true
+logto = {{ parts.buildout.directory }}/var/log/process.log
+
+{% if autoreload -%}
+python-autoreload = {{ autoreload }}
+{%- endif %}
